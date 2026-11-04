@@ -2,6 +2,9 @@ import hashlib
 import urllib.request
 import zipfile
 from pathlib import Path
+import os
+import shutil
+import tempfile
 
 
 URL = (
@@ -9,10 +12,11 @@ URL = (
     "default+of+credit+card+clients.zip"
 )
 
-RAW_DIRECTORY = Path("data/raw")
+PROJECT_ROOT = Path(os.getenv("SENTINELML_ROOT", Path(__file__).resolve().parents[3]))
+RAW_DIRECTORY = PROJECT_ROOT / "data/raw"
 ZIP_PATH = RAW_DIRECTORY / "credit_default.zip"
 
-# Leave this empty for the first run.
+# Archive fingerprint recorded from the UCI download on Day 2.
 EXPECTED_SHA256 = "56c885f84457f6680f8438f02bfcdac9579323d8a94465ee5f26e32baa727602"
 
 
@@ -35,7 +39,17 @@ def main() -> None:
 
     if not ZIP_PATH.exists():
         print(f"Downloading dataset from {URL}...")
-        urllib.request.urlretrieve(URL, ZIP_PATH)
+        # A failed download must not leave a partial file at the cache path.
+        with tempfile.NamedTemporaryFile(dir=RAW_DIRECTORY, suffix=".part", delete=False) as temporary:
+            temporary_path = Path(temporary.name)
+        try:
+            with urllib.request.urlopen(URL, timeout=60) as response, temporary_path.open("wb") as output:
+                shutil.copyfileobj(response, output)
+            if calculate_sha256(temporary_path) != EXPECTED_SHA256:
+                raise ValueError("Downloaded archive failed checksum verification")
+            temporary_path.replace(ZIP_PATH)
+        finally:
+            temporary_path.unlink(missing_ok=True)
         print(f"Saved archive to {ZIP_PATH}.")
     else:
         print(f"Using existing archive at {ZIP_PATH}.")
@@ -55,7 +69,10 @@ def main() -> None:
         for filename in archive.namelist():
             print(f"- {filename}")
 
-        archive.extractall(RAW_DIRECTORY)
+        # Extract only the known dataset member, never arbitrary archive paths.
+        filename = "default of credit card clients.xls"
+        with archive.open(filename) as source, (RAW_DIRECTORY / filename).open("wb") as output:
+            shutil.copyfileobj(source, output)
 
     print(f"Extracted files to {RAW_DIRECTORY}.")
 

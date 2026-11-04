@@ -29,3 +29,10 @@ data/processed/*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Reproducible local runtime outputs
+artifacts/
+*.egg-info/
+build/
+dist/
+sentinelml-project-*.zip

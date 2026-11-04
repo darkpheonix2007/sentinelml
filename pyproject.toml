@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sentinelml"
+version = "0.1.0"
+description = "Reproducible tabular model monitoring and controlled drift experiments"
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=1.26,<3", "pandas>=2.2,<4", "scikit-learn>=1.5,<2",
+  "scipy>=1.12,<2", "joblib>=1.3,<2", "PyYAML>=6,<7",
+  "xlrd>=2.0,<3", "fastapi>=0.115,<1", "uvicorn>=0.30,<1",
+  "streamlit>=1.40,<2", "plotly>=5.24,<7"
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10", "httpx>=0.27,<1"]
+acs = ["folktables==0.0.12", "xgboost>=3,<4"]
+
+[project.scripts]
+sentinelml = "sentinelml.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "."]
