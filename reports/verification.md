@@ -2,6 +2,14 @@
 
 Development run: 2026-10-30; alert-rule update: 2026-11-03. Environment: Windows, Python 3.11.9, CPU only.
 
+## Fresh-clone check (2026-11-04)
+
+Cloned the public `main` branch into a separate temporary directory and followed the README setup on Windows with Python 3.11.9. `pip install -e ".[dev]"` succeeded; the unmodified clone passed **34 tests** with one Starlette/httpx deprecation warning. The first UCI download was interrupted mid-response and left no cached partial ZIP; retrying produced the recorded SHA-256. This exposed a transient-network usability gap, so the follow-up code adds three bounded retries for connection failures and a regression test. Checksum mismatch still fails rather than accepting a different archive.
+
+The clean clone then completed `python -m sentinelml.cli train` and `python -m sentinelml.cli demo` on CPU. A Docker image built from that clone, started without artifacts to show the expected welcome screen, and then started with the README's artifact bind mount. The populated dashboard rendered the model version, five demo batches, monitoring charts and validation metrics in a browser. Streamlit logged `use_container_width` deprecation warnings but no runtime error. This checks startup and an overview render, not every dashboard interaction or production load. The original workspace's older `.venv` launcher failed to start, so the modified-source tests used the fresh clone's Python environment.
+
+The follow-up modified source passed **35 tests**, including the interrupted-download retry regression test, under that fresh Python environment. The original workspace virtual environment should be recreated before running commands there directly.
+
 ## Baseline training
 
 Verified archive SHA-256: `56c885f84457f6680f8438f02bfcdac9579323d8a94465ee5f26e32baa727602`.

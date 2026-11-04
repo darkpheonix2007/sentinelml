@@ -32,6 +32,7 @@ Thumbs.db
 
 # Reproducible local runtime outputs
 artifacts/
+mlruns/
 *.egg-info/
 build/
 dist/

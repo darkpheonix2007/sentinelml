@@ -1,6 +1,8 @@
 .git
 .venv
 artifacts
+mlruns
+sentinelml-project-*.zip
 data
 notebooks
 __pycache__

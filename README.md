@@ -4,6 +4,18 @@ A local **drift monitoring and risk signaling** prototype for the UCI credit-def
 
 **Research prototype, not a lending service or a failure-prediction model.** Drift does not prove model degradation. Input-only alerts are risk signals; suitable delayed labels are needed to assess observed performance.
 
+## Main finding: a codebook change looked like drift
+
+In the ACSIncome-derived validation, the 2014-trained monitor alerted on 77 of 78 California 2018 batches. After removing occupation (`OCCP`) from **every** year and retraining/recalibrating, it alerted on 0 of 78. The [Census changed its occupation codes in 2018](https://www.census.gov/topics/employment/industry-occupation/about/occupation.html). This is evidence that the original alert flood was largely a schema/codebook problem—not proof that model performance collapsed.
+
+| Validation stream | Nine-feature actionable alerts | Eight-feature, no-occupation alerts | Mean F1, nine / eight features |
+|---|---:|---:|---:|
+| California 2018 | 77/78 | 0/78 | 0.719 / 0.714 |
+| California 2021 | 76/77 | 76/77 | 0.703 / 0.702 |
+| Texas 2018 | 53/54 | 53/54 | 0.714 / 0.708 |
+
+The eight-feature comparison was **post-hoc**, prompted by the 2018 result; it is not an untouched confirmation test. Only 14 disjoint 2014 California batches were available for the ACS stable-stream check at the sampled density, so this project cannot claim a reliable live false-alert rate. The credit-card shifts are synthetic and reuse rows. See [the ACS validation](reports/acs_validation.md) and [the corrected credit sweep](reports/shift_sweep_5000.md) for methods, measured results, and limitations. No GPU is required.
+
 ## What works
 
 - Checksum-verified UCI download and portable dataset paths
