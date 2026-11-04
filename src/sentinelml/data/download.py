@@ -1,10 +1,13 @@
 import hashlib
+import http.client
 import urllib.request
+import urllib.error
 import zipfile
 from pathlib import Path
 import os
 import shutil
 import tempfile
+import time
 
 
 URL = (
@@ -32,14 +35,10 @@ def calculate_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def main() -> None:
-    """Download, verify, and extract the dataset."""
+def download_verified_archive(attempts: int = 3) -> None:
+    """Retry transient transfer failures without caching a partial archive."""
 
-    RAW_DIRECTORY.mkdir(parents=True, exist_ok=True)
-
-    if not ZIP_PATH.exists():
-        print(f"Downloading dataset from {URL}...")
-        # A failed download must not leave a partial file at the cache path.
+    for attempt in range(1, attempts + 1):
         with tempfile.NamedTemporaryFile(dir=RAW_DIRECTORY, suffix=".part", delete=False) as temporary:
             temporary_path = Path(temporary.name)
         try:
@@ -48,8 +47,24 @@ def main() -> None:
             if calculate_sha256(temporary_path) != EXPECTED_SHA256:
                 raise ValueError("Downloaded archive failed checksum verification")
             temporary_path.replace(ZIP_PATH)
+            return
+        except (http.client.IncompleteRead, urllib.error.URLError, TimeoutError, ConnectionError) as error:
+            if attempt == attempts:
+                raise
+            print(f"Download interrupted ({error}); retrying ({attempt}/{attempts})...")
+            time.sleep(attempt)
         finally:
             temporary_path.unlink(missing_ok=True)
+
+
+def main() -> None:
+    """Download, verify, and extract the dataset."""
+
+    RAW_DIRECTORY.mkdir(parents=True, exist_ok=True)
+
+    if not ZIP_PATH.exists():
+        print(f"Downloading dataset from {URL}...")
+        download_verified_archive()
         print(f"Saved archive to {ZIP_PATH}.")
     else:
         print(f"Using existing archive at {ZIP_PATH}.")
